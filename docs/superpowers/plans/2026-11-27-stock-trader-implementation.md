@@ -787,7 +787,7 @@ def price_features(
     returns = prices.pct_change().dropna()
     window = min(63, len(prices))
     recent_volume = volumes.iloc[-5:].mean()
-    trailing_volume = volumes.iloc[-window:].mean()
+    trailing_volume = volumes.iloc[-21:].mean()
     features = {
         "momentum_21": _return_over(prices, 21),
         "volatility_21": float(returns.iloc[-21:].std(ddof=0) * np.sqrt(252)),
