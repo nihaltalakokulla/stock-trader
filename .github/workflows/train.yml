@@ -1,0 +1,28 @@
+name: train-ranker
+
+on:
+  schedule:
+    - cron: "0 12 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - name: Train and save the ranker
+        run: uv run python -m stock_trader.cli train
+        env:
+          FINNHUB_TOKEN: ${{ secrets.FINNHUB_TOKEN }}
+      - name: Commit the model artifact
+        run: |
+          git config user.name "stock-trader-bot"
+          git config user.email "stock-trader-bot@users.noreply.github.com"
+          git add models/latest.joblib
+          git diff --cached --quiet || git commit -m "chore: retrain ranking model"
+          git push

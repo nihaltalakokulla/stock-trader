@@ -17,8 +17,9 @@ trading endpoint through a broker adapter ($500 live account).
 - [x] Proposal text, approval execution, repository seam
 - [x] yfinance/Finnhub adapters, signal ranking, Supabase schema
 - [x] Thin Cloudflare Worker for Twilio replies and GitHub dispatch
-- [ ] CLI wiring, GitHub Actions workflows, dashboard
-- [ ] ML model training pipeline and backtest tuning
+- [x] CLI wiring, GitHub Actions workflows, dashboard
+- [x] ML model training pipeline and backtest harness
+- [ ] Backtest tuning against real history and two-week paper dry run
 - [ ] Two-week paper dry run, then Robinhood adapter
 
 Design: `docs/superpowers/specs/2026-11-27-stock-trader-design.md`

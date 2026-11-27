@@ -1,0 +1,31 @@
+name: execute-approval
+
+on:
+  workflow_dispatch:
+    inputs:
+      approval_key:
+        description: Approval idempotency key
+        required: true
+
+concurrency:
+  group: execute-${{ inputs.approval_key }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - name: Execute the approved paper trade
+        run: uv run python -m stock_trader.cli execute --key "${{ inputs.approval_key }}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
+          USER_PHONE: ${{ secrets.USER_PHONE }}
+          FINNHUB_TOKEN: ${{ secrets.FINNHUB_TOKEN }}

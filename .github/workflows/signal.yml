@@ -1,0 +1,34 @@
+name: nightly-signals
+
+on:
+  schedule:
+    - cron: "0 23 * * 1-5"
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-signals
+  cancel-in-progress: false
+
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - name: Ensure a trained model exists
+        run: |
+          if [ ! -f models/latest.joblib ]; then
+            uv run python -m stock_trader.cli train
+          fi
+      - name: Screen, rank, and send proposals
+        run: uv run python -m stock_trader.cli nightly
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
+          USER_PHONE: ${{ secrets.USER_PHONE }}
+          FINNHUB_TOKEN: ${{ secrets.FINNHUB_TOKEN }}
