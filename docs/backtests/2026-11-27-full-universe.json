@@ -1,0 +1,95 @@
+{
+  "generated": "2026-11-27",
+  "period": "5y",
+  "symbols": 47,
+  "split": {
+    "train_end": "2024-11-25",
+    "validation_start": "2024-11-26",
+    "validation_end": "2025-11-26",
+    "test_start": "2025-11-28",
+    "test_end": "2026-11-27"
+  },
+  "validation": [
+    {
+      "threshold": 0.5,
+      "total_return": 0.1425295363282313,
+      "sharpe": 0.8254821367860861,
+      "max_drawdown": -0.19436336831515133,
+      "win_rate": 0.47297297297297297,
+      "profit_factor": 1.3494736184685123,
+      "trades": 74.0,
+      "max_open_positions": 5.0
+    },
+    {
+      "threshold": 0.55,
+      "total_return": 0.1425295363282313,
+      "sharpe": 0.8254821367860861,
+      "max_drawdown": -0.19436336831515133,
+      "win_rate": 0.47297297297297297,
+      "profit_factor": 1.3494736184685123,
+      "trades": 74.0,
+      "max_open_positions": 5.0
+    },
+    {
+      "threshold": 0.6,
+      "total_return": 0.1425295363282313,
+      "sharpe": 0.8254821367860861,
+      "max_drawdown": -0.19436336831515133,
+      "win_rate": 0.47297297297297297,
+      "profit_factor": 1.3494736184685123,
+      "trades": 74.0,
+      "max_open_positions": 5.0
+    },
+    {
+      "threshold": 0.65,
+      "total_return": 0.1425295363282313,
+      "sharpe": 0.8254821367860861,
+      "max_drawdown": -0.19436336831515133,
+      "win_rate": 0.47297297297297297,
+      "profit_factor": 1.3494736184685123,
+      "trades": 74.0,
+      "max_open_positions": 5.0
+    },
+    {
+      "threshold": 0.7,
+      "total_return": -0.08463130630217597,
+      "sharpe": -0.49661658725965546,
+      "max_drawdown": -0.18527589572708825,
+      "win_rate": 0.3972602739726027,
+      "profit_factor": 0.7935742739910212,
+      "trades": 73.0,
+      "max_open_positions": 5.0
+    },
+    {
+      "threshold": 0.75,
+      "total_return": -0.034956948117836006,
+      "sharpe": -0.19148976745638893,
+      "max_drawdown": -0.16721178296106431,
+      "win_rate": 0.4153846153846154,
+      "profit_factor": 0.9040090470878068,
+      "trades": 65.0,
+      "max_open_positions": 5.0
+    }
+  ],
+  "chosen_threshold": 0.5,
+  "test": {
+    "total_return": 0.15769029701774362,
+    "sharpe": 0.9608865502549615,
+    "max_drawdown": -0.1076697743737145,
+    "win_rate": 0.4375,
+    "profit_factor": 1.3999398624876358,
+    "trades": 80.0,
+    "max_open_positions": 5.0,
+    "benchmark_return": 0.0772436604886364,
+    "excess_return": 0.08044663652910722,
+    "annualized_volatility": 0.1415207308748128
+  },
+  "caveats": [
+    "News features are zero in this backtest: free historical news was not available, so the news half of the hybrid model is not validated here.",
+    "Universe is today's liquid large caps (survivorship bias).",
+    "Fixed 21-session hold with ATR stop approximates the live exit rules.",
+    "Close-price fills with 0.1% cost per side; real slippage may be worse.",
+    "Threshold was selected on validation and reported once on the held-out test window; still one sample, not a guarantee.",
+    "Predicted probabilities cluster high: thresholds 0.50-0.65 produced identical portfolios, so the confidence gate is not yet calibrated."
+  ]
+}
