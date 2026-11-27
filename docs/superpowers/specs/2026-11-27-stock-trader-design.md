@@ -42,7 +42,7 @@ flowchart LR
     U[User phone] <-->|SMS proposal / YES NO STOP| T[Twilio]
     T -->|inbound webhook| W[Cloudflare Worker<br/>~50 lines, verify + write]
     W --> S[(Supabase<br/>state of record)]
-    S -->|DB webhook on approval| G[GitHub Actions<br/>repository_dispatch]
+    W -->|workflow dispatch| G[GitHub Actions<br/>approval executor]
     E[Python engine on Actions<br/>nightly cron] -->|screens, ranks, texts| T
     E <--> S
     G --> E
@@ -58,9 +58,9 @@ Components:
   cron run for signals and exit review, and a `repository_dispatch` run for
   executing approvals. All trading logic lives here.
 - **Cloudflare Worker** — receives Twilio's inbound-SMS webhook, verifies the
-  Twilio request signature and the sender's phone number, and writes the parsed
-  YES/NO/STOP reply to Supabase. No trading logic; written once, expected never
-  to change.
+  Twilio request signature and the sender's phone number, writes the parsed
+  YES/NO/STOP reply to Supabase, and dispatches the GitHub execution workflow.
+  No trading logic; written once, expected never to change.
 - **Supabase (free tier)** — Postgres is the single source of truth for
   signals, proposals, approvals, orders, positions, trades, and alerts. Row
   Level Security restricts reads; a database webhook fires on approval inserts.
@@ -110,7 +110,10 @@ Components:
 - Parse `YES`, `NO`, `STOP` (case-insensitive).
 - Write the approval row with the proposal's idempotency key. Duplicate writes
   are no-ops.
-- Nothing else. No secrets beyond Twilio and Supabase credentials.
+- On `YES`, call the GitHub Actions workflow-dispatch API with the approval key.
+  On `STOP`, set `trading_paused = true` and confirm by SMS.
+- No trading logic. Secrets are limited to Twilio, Supabase, and the dispatch
+  token.
 
 ### 4.4 Supabase schema
 
@@ -118,8 +121,7 @@ Components:
   `alerts`, `settings`.
 - Each trade carries a state column and an audit trail of transitions.
 - Row Level Security: the dashboard's anon key can only read restricted views.
-- Database webhook on `approvals` insert posts to GitHub's `repository_dispatch`
-  API using a workflow-scoped PAT.
+- Approval dispatch is performed by the Worker (see 4.3).
 
 ### 4.5 Broker adapters
 
@@ -214,8 +216,8 @@ ORDER_SUBMITTED -> CANCELLED
   confidence gate -> capacity check -> proposal text. Then exit review,
   reconciliation sweep, breaker check. All results written to Supabase.
 - **Approval cycle**: user reply -> Twilio webhook -> Worker verification ->
-  approval row -> Supabase DB webhook -> GitHub dispatch -> Python executor ->
-  order via broker adapter -> confirmation text.
+  approval row -> Worker dispatches GitHub Actions -> Python executor -> order
+  via broker adapter -> confirmation text.
 - **Exit cycle**: nightly review decides stops/exits -> engine submits exit
   orders -> confirmation text -> state update.
 
@@ -290,6 +292,9 @@ ORDER_SUBMITTED -> CANCELLED
   for swing trading and the reconciliation sweep covers missed triggers.
 - Supabase free tier pauses after about a week without traffic; the daily
   signal run prevents this.
+- Supabase Database Webhooks emit a fixed event payload that does not match
+  GitHub's dispatch API. The Worker therefore calls the workflow-dispatch
+  endpoint directly, and its PAT is scoped to Actions on this one repository.
 - Twilio costs a monthly number fee plus per-message fees (roughly a couple of
   dollars a month at this message volume).
 - Paper fills approximate real execution; slippage assumptions are validated

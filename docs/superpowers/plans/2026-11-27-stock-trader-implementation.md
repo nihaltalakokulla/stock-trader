@@ -1814,7 +1814,9 @@ before running the test.
 - `default { async fetch(request, env) }` — only accepts `POST /sms-webhook`,
   verifies signature and `env.ALLOWED_PHONE`, inserts into `approvals` through
   Supabase REST using `env.SUPABASE_URL` and `env.SUPABASE_SERVICE_KEY`, returns
-  TwiML `<Response></Response>`. Duplicate idempotency keys return 200.
+  TwiML `<Response></Response>`. Duplicate idempotency keys return 200. On
+  `YES`, posts to the GitHub workflow-dispatch API using the stored dispatch
+  token; on `STOP`, upserts `settings.trading_paused = true`.
 
 - [ ] **Step 3: Run tests and commit**
 
@@ -1909,8 +1911,10 @@ jobs:
 ```yaml
 name: execute-approval
 on:
-  repository_dispatch:
-    types: [approval]
+  workflow_dispatch:
+    inputs:
+      approval_key:
+        required: true
 jobs:
   execute:
     runs-on: ubuntu-latest
@@ -1918,7 +1922,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --frozen
-      - run: uv run python -m stock_trader.cli execute --key "${{ github.event.client_payload.approval_key }}"
+      - run: uv run python -m stock_trader.cli execute --key "${{ inputs.approval_key }}"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
