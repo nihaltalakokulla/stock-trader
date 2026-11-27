@@ -46,6 +46,7 @@ create table orders (
 create table positions (
   id uuid primary key default gen_random_uuid(),
   updated_at timestamptz not null default now(),
+  proposal_id uuid references proposals(id),
   symbol text not null unique,
   qty integer not null,
   avg_price numeric not null,

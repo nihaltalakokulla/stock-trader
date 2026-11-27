@@ -24,7 +24,7 @@ class InMemoryRepository:
         self._states: dict[str, TradeState] = {}
         self._signals: list[dict[str, Any]] = []
         self._settings: dict[str, Any] = {}
-        self._positions: dict[str, int] = {}
+        self._positions: dict[str, dict[str, Any]] = {}
 
     def save_proposal(self, proposal_id: str, data: dict[str, Any]) -> None:
         self._proposals[proposal_id] = data
@@ -73,6 +73,9 @@ class InMemoryRepository:
     def open_position_symbols(self) -> set[str]:
         return set(self._positions)
 
+    def open_positions(self) -> list[dict[str, Any]]:
+        return list(self._positions.values())
+
     def get_setting(self, key: str) -> Any:
         return self._settings.get(key)
 
@@ -83,5 +86,8 @@ class InMemoryRepository:
         return data
 
     def upsert_position(self, data: dict[str, Any]) -> dict[str, Any]:
-        self._positions[data["symbol"]] = data["qty"]
+        self._positions[data["symbol"]] = data
         return data
+
+    def remove_position(self, symbol: str) -> None:
+        self._positions.pop(symbol, None)

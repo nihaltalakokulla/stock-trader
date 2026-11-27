@@ -43,3 +43,12 @@ def test_cannot_sell_more_than_held():
     b = broker()
     with pytest.raises(ValueError):
         b.submit_order("AAPL", Side.SELL, 1, client_id="c1")
+
+
+def test_restored_positions_can_be_sold():
+    b = PaperBroker(
+        19_000.0, lambda symbol: 100.0, positions={"AAPL": 5}
+    )
+    assert b.get_positions()["AAPL"] == 5
+    b.submit_order("AAPL", Side.SELL, 5, client_id="exit-1")
+    assert "AAPL" not in b.get_positions()

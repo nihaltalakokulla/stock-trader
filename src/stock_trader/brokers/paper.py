@@ -13,11 +13,12 @@ class PaperBroker:
         starting_cash: float,
         quote_provider: Callable[[str], float],
         slippage_pct: float = 0.001,
+        positions: dict[str, int] | None = None,
     ) -> None:
         self._cash = starting_cash
         self._quotes = quote_provider
         self._slippage = slippage_pct
-        self._positions: dict[str, int] = {}
+        self._positions: dict[str, int] = dict(positions or {})
         self._fills: list[Order] = []
         self._by_client_id: dict[str, Order] = {}
 

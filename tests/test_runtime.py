@@ -52,3 +52,34 @@ def test_nightly_dry_run_creates_proposal_and_prints_text(tmp_path):
 
     assert repo.pending_proposal_count() == 1
     assert any("Reply YES to approve" in text for text in outputs)
+
+
+def test_review_positions_sells_when_stop_is_hit(tmp_path):
+    model_path = tmp_path / "unused.joblib"
+    outputs: list[str] = []
+    repo = InMemoryRepository()
+    repo.set_setting("paper_account", {"cash": 19_000.0, "equity": 19_500.0})
+    repo.upsert_position({
+        "symbol": "AAPL",
+        "qty": 10,
+        "avg_price": 100.0,
+        "stop_price": 105.0,
+        "opened_at": "2026-11-20T20:00:00+00:00",
+    })
+    data = rising_frame()
+    data.loc[data.index[-1], "Close"] = 104.0
+    data.loc[data.index[-1], "High"] = 105.0
+    data.loc[data.index[-1], "Low"] = 103.0
+    runtime = Runtime(
+        settings=Settings(),
+        repo=repo,
+        model_path=model_path,
+        fetcher=lambda symbol: data,
+        now=lambda: datetime(2026, 11, 27, 23, 0, tzinfo=UTC),
+        output=outputs.append,
+    )
+
+    runtime.review_positions(dry_run=True)
+
+    assert repo.open_position_symbols() == set()
+    assert any("SELL" in text for text in outputs)

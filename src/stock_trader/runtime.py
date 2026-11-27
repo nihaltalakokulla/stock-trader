@@ -14,7 +14,7 @@ from stock_trader.data.news import fetch_company_news
 from stock_trader.data.prices import fetch_yfinance_frame, load_price_history
 from stock_trader.db.repository import InMemoryRepository
 from stock_trader.domain.approvals import Decision
-from stock_trader.domain.models import Headline
+from stock_trader.domain.models import Headline, Side
 from stock_trader.domain.proposals import Proposal
 from stock_trader.domain.state import TradeState
 from stock_trader.engine.execute import execute_approval
@@ -65,6 +65,7 @@ class Runtime:
     def nightly(self, dry_run: bool = False) -> None:
         if not self.model_path.exists():
             raise RuntimeError("model missing; run `python -m stock_trader.cli train`")
+        self.review_positions(dry_run=dry_run)
         model = RankingModel.load(self.model_path)
         frames = load_price_history(self.fetcher, DEFAULT_UNIVERSE)
         benchmark = frames.get(BENCHMARK) or self.fetcher(BENCHMARK)
@@ -229,6 +230,7 @@ class Runtime:
         self.repo.upsert_position(
             {
                 "symbol": proposal.symbol,
+                "proposal_id": proposal.id,
                 "qty": proposal.qty,
                 "avg_price": fill.fill_price,
                 "stop_price": proposal.stop_price,
@@ -241,6 +243,69 @@ class Runtime:
                 _env("USER_PHONE") or "",
                 f"FILLED: BUY {proposal.qty} {proposal.symbol} @ {fill.fill_price:.2f}",
             )
+
+    def review_positions(self, dry_run: bool = False) -> None:
+        now = self.now()
+        for position in self.repo.open_positions():
+            symbol = position["symbol"]
+            qty = int(position["qty"])
+            stop = float(position["stop_price"])
+            frame = self.fetcher(symbol)
+            price = float(frame["Close"].iloc[-1])
+            opened_at = _parse_time(position["opened_at"])
+            held_days = (now - opened_at).days
+            trailing_stop = price - self.settings.stop_atr_multiple * atr(frame)
+
+            stop_hit = price <= stop
+            time_exit = held_days >= self.settings.max_hold_days
+            if not (stop_hit or time_exit):
+                if trailing_stop > stop:
+                    updated = dict(position)
+                    updated["stop_price"] = trailing_stop
+                    self.repo.upsert_position(updated)
+                continue
+
+            state = self.repo.get_setting("paper_account") or {
+                "cash": self.settings.paper_starting_cash
+            }
+            broker = PaperBroker(
+                float(state["cash"]),
+                lambda ticker: float(self.fetcher(ticker)["Close"].iloc[-1]),
+                self.settings.slippage_pct,
+                positions={symbol: qty},
+            )
+            fill = broker.submit_order(
+                symbol,
+                Side.SELL,
+                qty,
+                client_id=f"exit:{symbol}:{now.date().isoformat()}",
+            )
+            account = broker.get_account()
+            self.repo.set_setting(
+                "paper_account",
+                {"cash": account.cash, "equity": account.equity},
+            )
+            self.repo.insert_order(
+                {
+                    "proposal_id": position.get("proposal_id", position["symbol"]),
+                    "client_id": fill.client_id,
+                    "symbol": symbol,
+                    "side": fill.side.value,
+                    "qty": qty,
+                    "fill_price": fill.fill_price,
+                    "status": "FILLED",
+                }
+            )
+            self.repo.remove_position(symbol)
+            reason = "stop hit" if stop_hit else "time cap"
+            self.output(
+                f"SELL {qty} {symbol} at {fill.fill_price:.2f} ({reason})"
+            )
+            if not dry_run and self.sender is not None and _env("USER_PHONE"):
+                self.sender.send(
+                    _env("USER_PHONE") or "",
+                    f"EXIT: SELL {qty} {symbol} @ {fill.fill_price:.2f} ({reason})",
+                )
 
     def paper_report(self) -> None:
         state = self.repo.get_setting("paper_account") or {}

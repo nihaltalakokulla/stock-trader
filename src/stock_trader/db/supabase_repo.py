@@ -124,8 +124,19 @@ class SupabaseRepository:
         return len(rows)
 
     def open_position_symbols(self) -> set[str]:
-        rows = self._get("positions", {"select": "symbol"})
+        rows = self._get("positions", {"select": "symbol", "qty": "gt.0"})
         return {row["symbol"] for row in rows}
+
+    def open_positions(self) -> list[dict]:
+        return self._get("positions", {"select": "*", "qty": "gt.0"})
+
+    def remove_position(self, symbol: str) -> None:
+        response = self._client.delete(
+            f"{self._url}/rest/v1/positions",
+            params={"symbol": f"eq.{symbol}"},
+            headers=self._headers("return=minimal"),
+        )
+        response.raise_for_status()
 
     def get_setting(self, key: str) -> Any:
         rows = self._get("settings", {"select": "value", "key": f"eq.{key}"})
