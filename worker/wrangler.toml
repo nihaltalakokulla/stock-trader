@@ -1,0 +1,13 @@
+name = "stock-trader-approval"
+main = "src/index.ts"
+compatibility_date = "2026-11-27"
+
+[vars]
+GITHUB_OWNER = "nihaltalakokulla"
+GITHUB_REPO = "stock-trader"
+GITHUB_REF = "feat/stock-trader-core"
+GITHUB_WORKFLOW_FILE = "execute.yml"
+
+# Secrets (set with `wrangler secret put <NAME>`):
+# TWILIO_AUTH_TOKEN, ALLOWED_PHONE, SUPABASE_URL, SUPABASE_SERVICE_KEY,
+# GITHUB_DISPATCH_TOKEN

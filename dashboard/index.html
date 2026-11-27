@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stock Trader</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <p class="eyebrow">Paper trading</p>
+        <h1>Stock Trader</h1>
+      </div>
+      <div id="status" class="status" aria-live="polite">Connecting…</div>
+    </header>
+
+    <div id="paused-banner" class="banner hidden" role="alert">
+      Trading is paused. New proposals are not being sent.
+    </div>
+
+    <main>
+      <section class="cards">
+        <article class="card">
+          <h2>Open positions</h2>
+          <p id="position-count" class="big-number">—</p>
+        </article>
+        <article class="card">
+          <h2>Pending proposal</h2>
+          <p id="pending-symbol" class="big-number">—</p>
+        </article>
+        <article class="card">
+          <h2>Latest signal</h2>
+          <p id="latest-signal" class="big-number">—</p>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>Positions</h2>
+        <table>
+          <thead>
+            <tr><th>Symbol</th><th>Qty</th><th>Avg price</th><th>Stop</th><th>Opened</th></tr>
+          </thead>
+          <tbody id="positions-body"></tbody>
+        </table>
+        <p id="positions-empty" class="empty">No open positions.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Signals</h2>
+        <table>
+          <thead>
+            <tr><th>Time</th><th>Symbol</th><th>Confidence</th><th>Why</th></tr>
+          </thead>
+          <tbody id="signals-body"></tbody>
+        </table>
+        <p id="signals-empty" class="empty">No signals yet.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Proposals</h2>
+        <table>
+          <thead>
+            <tr><th>Time</th><th>Symbol</th><th>Qty</th><th>Entry</th><th>Stop</th><th>State</th><th>Expires</th></tr>
+          </thead>
+          <tbody id="proposals-body"></tbody>
+        </table>
+        <p id="proposals-empty" class="empty">No proposals yet.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Alerts</h2>
+        <ul id="alerts-list" class="alerts"></ul>
+        <p id="alerts-empty" class="empty">No alerts.</p>
+      </section>
+    </main>
+
+    <script src="config.local.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
