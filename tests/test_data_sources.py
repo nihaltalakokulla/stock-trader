@@ -1,0 +1,47 @@
+from datetime import UTC, datetime
+
+import httpx
+import pandas as pd
+
+from stock_trader.data.news import fetch_company_news, parse_finnhub_news
+from stock_trader.data.prices import load_price_history
+
+
+def test_price_loader_keys_symbols_and_skips_empty():
+    def fetch(symbol):
+        return pd.DataFrame() if symbol == "BAD" else pd.DataFrame({"Close": [1.0]})
+
+    frames = load_price_history(fetch, ["AAPL", "BAD"])
+    assert list(frames) == ["AAPL"]
+
+
+def test_finnhub_payload_parsing_keeps_full_structure():
+    payload = [{
+        "headline": "AAPL beats estimates",
+        "datetime": 1_765_000_000,
+        "source": "wire",
+        "url": "https://example.com/x",
+    }]
+    headlines = parse_finnhub_news(payload, "AAPL")
+    assert headlines[0].title == "AAPL beats estimates"
+    assert headlines[0].published_at == datetime.fromtimestamp(1_765_000_000, tz=UTC)
+
+
+def test_finnhub_fetcher_sends_expected_query():
+    seen = {}
+
+    def handler(request):
+        seen["url"] = str(request.url)
+        return httpx.Response(200, json=[{
+            "headline": "AAPL upgrade", "datetime": 1_765_000_000,
+            "source": "wire", "url": "",
+        }])
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    headlines = fetch_company_news(
+        client, "AAPL", datetime(2026, 11, 20).date(),
+        datetime(2026, 11, 27).date(), "token123",
+    )
+    assert "symbol=AAPL" in seen["url"]
+    assert "token=token123" in seen["url"]
+    assert headlines[0].title == "AAPL upgrade"
