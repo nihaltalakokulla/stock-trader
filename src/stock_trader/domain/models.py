@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 
 
 @dataclass(frozen=True)
@@ -26,3 +27,30 @@ class NewsFeatures:
     sentiment: float
     headline_count: int
     shock: bool
+
+
+class Side(StrEnum):
+    BUY = "BUY"
+    SELL = "SELL"
+
+
+class OrderStatus(StrEnum):
+    FILLED = "FILLED"
+    REJECTED = "REJECTED"
+
+
+@dataclass(frozen=True)
+class Order:
+    id: str
+    symbol: str
+    side: Side
+    qty: int
+    fill_price: float
+    status: OrderStatus
+    client_id: str | None = None
+
+
+@dataclass(frozen=True)
+class Account:
+    cash: float
+    equity: float

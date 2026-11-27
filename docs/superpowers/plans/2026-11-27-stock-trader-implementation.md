@@ -940,7 +940,7 @@ def test_sell_returns_cash_minus_slippage():
     b = broker()
     b.submit_order("AAPL", Side.BUY, 10, client_id="c1")
     b.submit_order("AAPL", Side.SELL, 10, client_id="c2")
-    assert b.get_positions()["AAPL"] == 0
+    assert "AAPL" not in b.get_positions()
     assert b.get_account().cash == pytest.approx(18_999.0 + 999.0)
 
 
