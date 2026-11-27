@@ -8,7 +8,12 @@ import pandas as pd
 from stock_trader.config import Settings
 from stock_trader.data.prices import fetch_yfinance_frame
 from stock_trader.domain.models import NewsFeatures
-from stock_trader.model import FEATURE_COLUMNS, RankingModel, train_ranker
+from stock_trader.model import (
+    FEATURE_COLUMNS,
+    RankingModel,
+    brier_score,
+    train_ranker,
+)
 from stock_trader.pipeline import build_feature_row, build_snapshot, build_training_panel
 from stock_trader.screener import passes_screener
 from stock_trader.strategy_backtest import (
@@ -44,7 +49,11 @@ def fetch_frames(period: str, max_symbols: int | None) -> dict[str, pd.DataFrame
     return frames
 
 
-def train_on(frames: dict[str, pd.DataFrame], end: pd.Timestamp) -> RankingModel:
+def train_on(
+    frames: dict[str, pd.DataFrame],
+    end: pd.Timestamp,
+    calibration_method: str,
+) -> RankingModel:
     truncated = {
         symbol: frame.loc[:end]
         for symbol, frame in frames.items()
@@ -58,7 +67,11 @@ def train_on(frames: dict[str, pd.DataFrame], end: pd.Timestamp) -> RankingModel
     )
     if panel["label"].nunique() < 2 or len(panel) < 100:
         raise RuntimeError(f"not enough training rows: {len(panel)}")
-    return train_ranker(panel.loc[:, list(FEATURE_COLUMNS)], panel["label"])
+    return train_ranker(
+        panel.loc[:, list(FEATURE_COLUMNS)],
+        panel["label"],
+        calibration_method=calibration_method,
+    )
 
 
 def score_dates(
@@ -115,6 +128,38 @@ def signals_from_scores(
     return signals
 
 
+def probability_diagnostics(
+    scores: pd.DataFrame,
+    frames: dict[str, pd.DataFrame],
+    forward_days: int = 21,
+) -> dict:
+    values = scores.stack().dropna()
+    probabilities = []
+    labels = []
+    for signal in signals_from_scores(scores, 0.0):
+        frame = frames[signal.symbol]
+        position = frame.index.get_loc(signal.date)
+        if position + forward_days >= len(frame):
+            continue
+        closes = frame["Close"].astype(float)
+        label = int(
+            closes.iloc[position + forward_days] > closes.iloc[position]
+        )
+        probabilities.append(signal.probability)
+        labels.append(label)
+    return {
+        "distribution": {
+            "min": float(values.min()),
+            "q10": float(values.quantile(0.10)),
+            "median": float(values.quantile(0.50)),
+            "q90": float(values.quantile(0.90)),
+            "max": float(values.max()),
+        },
+        "brier": brier_score(probabilities, labels) if labels else None,
+        "samples": len(labels),
+    }
+
+
 def warm_slice(
     frames: dict[str, pd.DataFrame], start: pd.Timestamp, end: pd.Timestamp
 ) -> dict[str, pd.DataFrame]:
@@ -156,7 +201,12 @@ def momentum_signals(
     return signals
 
 
-def run(period: str, max_symbols: int | None, output: Path) -> dict:
+def run(
+    period: str,
+    max_symbols: int | None,
+    output: Path,
+    calibration_method: str,
+) -> dict:
     settings = Settings()
     frames = fetch_frames(period, max_symbols)
     calendar = frames[BENCHMARK].index
@@ -173,7 +223,7 @@ def run(period: str, max_symbols: int | None, output: Path) -> dict:
         flush=True,
     )
 
-    train_model = train_on(frames, train_date)
+    train_model = train_on(frames, train_date, calibration_method)
     print("scoring validation dates once...", flush=True)
     validation_scores = score_dates(
         frames, train_model, val_start, val_date, settings
@@ -210,7 +260,7 @@ def run(period: str, max_symbols: int | None, output: Path) -> dict:
         flush=True,
     )
 
-    retrained = train_on(frames, val_date)
+    retrained = train_on(frames, val_date, calibration_method)
     print("scoring held-out test dates...", flush=True)
     test_scores = score_dates(
         frames, retrained, test_start, test_date, settings
@@ -253,6 +303,7 @@ def run(period: str, max_symbols: int | None, output: Path) -> dict:
         "generated": date.today().isoformat(),
         "period": period,
         "data_source": "yfinance (10s timeout) with Yahoo chart fallback",
+        "calibration_method": calibration_method,
         "symbols": len([s for s in frames if s != BENCHMARK]),
         "split": {
             "train_end": train_date.date().isoformat(),
@@ -277,6 +328,10 @@ def run(period: str, max_symbols: int | None, output: Path) -> dict:
             "spy": spy_metrics,
             "equal_weight": equal_weight,
             "momentum_21_top1": momentum_report.metrics,
+        },
+        "probability_diagnostics": {
+            "validation": probability_diagnostics(validation_scores, frames),
+            "test": probability_diagnostics(test_scores, frames),
         },
         "caveats": [
             "News features are zero in this backtest: free historical news was not "
@@ -306,6 +361,7 @@ def render_markdown(result: dict, report) -> str:
         f"Generated {result['generated']} · {result['symbols']} symbols · "
         f"{result['period']} daily data",
         f"Data source: {result['data_source']}",
+        f"Calibration: {result['calibration_method']}",
         "",
         "## Split",
         "",
@@ -350,6 +406,22 @@ def render_markdown(result: dict, report) -> str:
         f"{int(result['benchmarks']['momentum_21_top1']['trades'])} |",
         f"| Excess vs SPY | {test['excess_return']:+.2%} | — | — | — |",
         "",
+        "## Probability calibration",
+        "",
+        "| Window | Min | 10th pct | Median | 90th pct | Max | Brier |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for name in ("validation", "test"):
+        diagnostics = result["probability_diagnostics"][name]
+        distribution = diagnostics["distribution"]
+        lines.append(
+            f"| {name} | {distribution['min']:.2f} | "
+            f"{distribution['q10']:.2f} | {distribution['median']:.2f} | "
+            f"{distribution['q90']:.2f} | {distribution['max']:.2f} | "
+            f"{diagnostics['brier']:.3f} |"
+        )
+    lines += [
+        "",
         "## Caveats",
         "",
     ]
@@ -362,12 +434,17 @@ def main() -> None:
     parser.add_argument("--period", default="5y")
     parser.add_argument("--max-symbols", type=int, default=None)
     parser.add_argument(
+        "--calibration-method",
+        choices=("isotonic", "sigmoid"),
+        default="isotonic",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=Path(f"docs/backtests/{date.today().isoformat()}-backtest.md"),
     )
     args = parser.parse_args()
-    run(args.period, args.max_symbols, args.output)
+    run(args.period, args.max_symbols, args.output, args.calibration_method)
 
 
 if __name__ == "__main__":

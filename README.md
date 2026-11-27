@@ -44,20 +44,20 @@ node --test test/index.test.ts
 train/validation/test, 0.1% cost per side, 21-session hold, ATR stops, 1% risk
 per trade:
 
-| Metric (held-out year) | ML strategy | SPY | Equal-weight | Momentum |
+| Metric (held-out, calibrated) | ML strategy | SPY | Equal-weight | Momentum |
 |---|---|---|---|---|
-| Total return | +15.43% | +7.72% | +14.57% | +9.60% |
-| Sharpe | 0.92 | 0.58 | 0.79 | 0.77 |
-| Max drawdown | -13.15% | -11.46% | -15.55% | -7.57% |
-| Trades | 81 | 1 | 1 | 43 |
+| Total return | +3.61% | +7.72% | +14.57% | +9.60% |
+| Sharpe | 0.29 | 0.58 | 0.79 | 0.77 |
+| Max drawdown | -12.62% | -11.46% | -15.55% | -7.57% |
+| Trades | 76 | 1 | 1 | 43 |
 
-The model shows a modest edge: it beats SPY and the momentum baseline, but only
-edges equal-weight ownership by +0.86 percentage points on return. Validation
-drawdown was -19.39%, probabilities are not calibrated, and news features were
-zero because historical free news was unavailable. Paper trade this before
-risking money.
+The uncalibrated run appeared to return +15.43%, but isotonic calibration
+revealed that as overconfidence: the honest held-out result trails SPY,
+equal-weight ownership, and the momentum baseline. Sigmoid calibration was
+worse (-1.38%). News features remain zero because historical free news was
+unavailable. This model is experimental and must not trade real money yet.
 
-Full report: `docs/backtests/2026-11-27-full-universe-yfinance.md`
+Full report: `docs/backtests/2026-11-27-full-universe-calibrated.md`
 
 Paper-trading setup: `docs/paper-runbook.md`
 

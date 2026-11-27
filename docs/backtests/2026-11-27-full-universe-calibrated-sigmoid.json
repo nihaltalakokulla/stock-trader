@@ -1,0 +1,142 @@
+{
+  "generated": "2026-11-27",
+  "period": "5y",
+  "data_source": "yfinance (10s timeout) with Yahoo chart fallback",
+  "calibration_method": "sigmoid",
+  "symbols": 47,
+  "split": {
+    "train_end": "2024-11-25",
+    "validation_start": "2024-11-26",
+    "validation_end": "2025-11-26",
+    "test_start": "2025-11-28",
+    "test_end": "2026-11-27"
+  },
+  "validation": [
+    {
+      "threshold": 0.5,
+      "total_return": 0.0852577940619268,
+      "sharpe": 0.5211561315696324,
+      "max_drawdown": -0.17554456303863364,
+      "win_rate": 0.4657534246575342,
+      "profit_factor": 1.213599288151419,
+      "trades": 73.0,
+      "max_open_positions": 5.0
+    },
+    {
+      "threshold": 0.55,
+      "total_return": 0.0852577940619268,
+      "sharpe": 0.5211561315696324,
+      "max_drawdown": -0.17554456303863364,
+      "win_rate": 0.4657534246575342,
+      "profit_factor": 1.213599288151419,
+      "trades": 73.0,
+      "max_open_positions": 5.0
+    },
+    {
+      "threshold": 0.6,
+      "total_return": 0.0852577940619268,
+      "sharpe": 0.5211561315696324,
+      "max_drawdown": -0.17554456303863364,
+      "win_rate": 0.4657534246575342,
+      "profit_factor": 1.213599288151419,
+      "trades": 73.0,
+      "max_open_positions": 5.0
+    },
+    {
+      "threshold": 0.65,
+      "total_return": 0.0852577940619268,
+      "sharpe": 0.5211561315696324,
+      "max_drawdown": -0.17554456303863364,
+      "win_rate": 0.4657534246575342,
+      "profit_factor": 1.213599288151419,
+      "trades": 73.0,
+      "max_open_positions": 5.0
+    },
+    {
+      "threshold": 0.7,
+      "total_return": 0.07492012580563268,
+      "sharpe": 0.47682786586611675,
+      "max_drawdown": -0.1768695749250372,
+      "win_rate": 0.44594594594594594,
+      "profit_factor": 1.1812770893994171,
+      "trades": 74.0,
+      "max_open_positions": 5.0
+    },
+    {
+      "threshold": 0.75,
+      "total_return": 0.08422102334048454,
+      "sharpe": 0.6887580469945943,
+      "max_drawdown": -0.10793393928518924,
+      "win_rate": 0.42105263157894735,
+      "profit_factor": 1.3564103391414652,
+      "trades": 38.0,
+      "max_open_positions": 4.0
+    }
+  ],
+  "chosen_threshold": 0.5,
+  "test": {
+    "total_return": -0.013826163612849496,
+    "sharpe": -0.015065639233539232,
+    "max_drawdown": -0.14991902334980356,
+    "win_rate": 0.379746835443038,
+    "profit_factor": 0.965696792304719,
+    "trades": 79.0,
+    "max_open_positions": 5.0,
+    "benchmark_return": 0.0772437577377727,
+    "excess_return": -0.0910699213506222,
+    "annualized_volatility": 0.14048352811078146
+  },
+  "benchmarks": {
+    "spy": {
+      "total_return": 0.0772437577377727,
+      "sharpe": 0.5753594005777564,
+      "max_drawdown": -0.11459526655375551
+    },
+    "equal_weight": {
+      "total_return": 0.1456505096531291,
+      "sharpe": 0.7910693101676314,
+      "max_drawdown": -0.15552958128977756
+    },
+    "momentum_21_top1": {
+      "total_return": 0.09604664341180391,
+      "sharpe": 0.7725852020578635,
+      "max_drawdown": -0.07565143924398354,
+      "win_rate": 0.4186046511627907,
+      "profit_factor": 1.3997770196926094,
+      "trades": 43.0,
+      "max_open_positions": 4.0
+    }
+  },
+  "probability_diagnostics": {
+    "validation": {
+      "distribution": {
+        "min": 0.46820934514172796,
+        "q10": 0.5492310394359144,
+        "median": 0.6204222902718657,
+        "q90": 0.7055640049373745,
+        "max": 0.805902995766188
+      },
+      "brier": 0.26521488750297995,
+      "samples": 251
+    },
+    "test": {
+      "distribution": {
+        "min": 0.47184229660984073,
+        "q10": 0.5480305676670872,
+        "median": 0.5931858160543215,
+        "q90": 0.641900519989735,
+        "max": 0.706023665257149
+      },
+      "brier": 0.2739387844500542,
+      "samples": 230
+    }
+  },
+  "caveats": [
+    "News features are zero in this backtest: free historical news was not available, so the news half of the hybrid model is not validated here.",
+    "Universe is today's liquid large caps (survivorship bias).",
+    "Fixed 21-session hold with ATR stop approximates the live exit rules.",
+    "Close-price fills with 0.1% cost per side; real slippage may be worse.",
+    "Threshold was selected on validation and reported once on the held-out test window; still one sample, not a guarantee.",
+    "Predicted probabilities cluster high: thresholds 0.50-0.65 produced identical portfolios, so the confidence gate is not yet calibrated."
+  ]
+}

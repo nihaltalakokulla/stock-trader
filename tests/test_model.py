@@ -2,7 +2,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from stock_trader.model import FEATURE_COLUMNS, RankingModel, train_ranker
+from stock_trader.model import (
+    FEATURE_COLUMNS,
+    RankingModel,
+    brier_score,
+    train_ranker,
+)
 
 
 def make_features(rows=160, seed=7):
@@ -31,6 +36,10 @@ def test_feature_columns_are_fixed():
         "news_count",
         "news_shock",
     )
+
+
+def test_brier_score_is_mean_squared_probability_error():
+    assert brier_score([0.2, 0.8], [0, 1]) == pytest.approx(0.04)
 
 
 def test_ranker_learns_momentum_signal():

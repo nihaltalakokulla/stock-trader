@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import RandomForestClassifier
 
 FEATURE_COLUMNS = (
@@ -20,7 +22,7 @@ FEATURE_COLUMNS = (
 
 @dataclass(frozen=True)
 class RankingModel:
-    estimator: RandomForestClassifier
+    estimator: Any
     feature_names: tuple[str, ...]
 
     def predict_proba(self, features: pd.DataFrame) -> np.ndarray:
@@ -53,6 +55,7 @@ def train_ranker(
     labels: pd.Series,
     *,
     random_state: int = 42,
+    calibration_method: str = "isotonic",
 ) -> RankingModel:
     missing = [name for name in FEATURE_COLUMNS if name not in features.columns]
     if missing:
@@ -61,12 +64,27 @@ def train_ranker(
         raise ValueError("features and labels must align")
     if labels.nunique() < 2:
         raise ValueError("labels must contain both classes")
-    estimator = RandomForestClassifier(
+    base = RandomForestClassifier(
         n_estimators=200,
         min_samples_leaf=5,
         class_weight="balanced",
         random_state=random_state,
         n_jobs=-1,
     )
-    estimator.fit(features.loc[:, list(FEATURE_COLUMNS)], labels.astype(int))
+    estimator = CalibratedClassifierCV(
+        estimator=base,
+        method=calibration_method,
+        cv=3,
+    )
+    estimator.fit(
+        features.loc[:, list(FEATURE_COLUMNS)], labels.astype(int)
+    )
     return RankingModel(estimator=estimator, feature_names=FEATURE_COLUMNS)
+
+
+def brier_score(probabilities, labels) -> float:
+    probs = np.asarray(probabilities, dtype=float)
+    truth = np.asarray(labels, dtype=float)
+    if len(probs) != len(truth):
+        raise ValueError("probabilities and labels must align")
+    return float(np.mean((probs - truth) ** 2))
