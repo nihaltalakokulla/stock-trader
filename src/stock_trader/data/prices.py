@@ -60,4 +60,21 @@ def fetch_yahoo_frame(
 
 
 def fetch_yfinance_frame(symbol: str, period: str = "2y") -> pd.DataFrame:
-    return fetch_yahoo_frame(symbol, period)
+    try:
+        import yfinance as yf
+
+        frame = yf.download(
+            symbol,
+            period=period,
+            auto_adjust=True,
+            progress=False,
+            threads=False,
+            timeout=10,
+        )
+        if frame is None or frame.empty:
+            raise ValueError("empty yfinance response")
+        if isinstance(frame.columns, pd.MultiIndex):
+            frame.columns = frame.columns.get_level_values(0)
+        return frame.dropna()
+    except Exception:
+        return fetch_yahoo_frame(symbol, period)

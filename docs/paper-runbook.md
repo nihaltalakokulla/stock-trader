@@ -4,8 +4,8 @@ This runs the bot end to end with simulated money: $20,000 paper account, real
 market data, real SMS approvals, no brokerage connection.
 
 Before starting, read the backtest result in
-`docs/backtests/2026-11-27-full-universe.md`. The strategy beat SPY in the
-held-out year (+15.77% vs +7.72%), but validation drawdown was -19.44% and the
+`docs/backtests/2026-11-27-full-universe-yfinance.md`. The strategy beat SPY in
+the held-out year (+15.43% vs +7.72%), but validation drawdown was -19.39% and the
 confidence scores are not calibrated. Paper trading is the next test, not a
 victory lap.
 

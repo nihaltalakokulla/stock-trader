@@ -5,7 +5,11 @@ import pandas as pd
 import pytest
 
 from stock_trader.data.news import fetch_company_news, parse_finnhub_news
-from stock_trader.data.prices import fetch_yahoo_frame, load_price_history
+from stock_trader.data.prices import (
+    fetch_yahoo_frame,
+    fetch_yfinance_frame,
+    load_price_history,
+)
 
 
 def test_price_loader_keys_symbols_and_skips_empty():
@@ -78,3 +82,34 @@ def test_yahoo_chart_payload_becomes_adjusted_ohlcv():
     assert frame["Close"].iloc[0] == 50.5
     assert frame["High"].iloc[0] == pytest.approx(51.0)
     assert frame["Volume"].iloc[1] == 2000
+
+
+def test_yfinance_uses_timeout_and_adjusts(monkeypatch):
+    seen = {}
+
+    def fake_download(symbol, **kwargs):
+        seen.update(kwargs)
+        return pd.DataFrame({
+            "Open": [99.0], "High": [101.0], "Low": [98.0],
+            "Close": [100.0], "Volume": [1000.0],
+        })
+
+    monkeypatch.setattr("yfinance.download", fake_download)
+    frame = fetch_yfinance_frame("AAPL", "1y")
+    assert seen["timeout"] == 10
+    assert seen["auto_adjust"] is True
+    assert frame["Close"].iloc[0] == 100.0
+
+
+def test_yfinance_falls_back_to_yahoo(monkeypatch):
+    fallback = pd.DataFrame({"Close": [123.0]})
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("blocked")
+
+    monkeypatch.setattr("yfinance.download", boom)
+    monkeypatch.setattr(
+        "stock_trader.data.prices.fetch_yahoo_frame",
+        lambda symbol, period: fallback,
+    )
+    assert fetch_yfinance_frame("AAPL", "5y") is fallback

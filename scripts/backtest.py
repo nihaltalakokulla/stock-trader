@@ -196,6 +196,7 @@ def run(period: str, max_symbols: int | None, output: Path) -> dict:
     result = {
         "generated": date.today().isoformat(),
         "period": period,
+        "data_source": "yfinance (10s timeout) with Yahoo chart fallback",
         "symbols": len([s for s in frames if s != BENCHMARK]),
         "split": {
             "train_end": train_date.date().isoformat(),
@@ -243,6 +244,7 @@ def render_markdown(result: dict, report) -> str:
         "",
         f"Generated {result['generated']} · {result['symbols']} symbols · "
         f"{result['period']} daily data",
+        f"Data source: {result['data_source']}",
         "",
         "## Split",
         "",

@@ -40,23 +40,25 @@ node --test test/index.test.ts
 
 ## Backtest snapshot
 
-5 years, 47 large-cap symbols, chronological train/validation/test, 0.1% cost
-per side, 21-session hold, ATR stops, 1% risk per trade:
+5 years of yfinance daily data, 47 large-cap symbols, chronological
+train/validation/test, 0.1% cost per side, 21-session hold, ATR stops, 1% risk
+per trade:
 
 | Metric (held-out year) | Strategy | SPY |
 |---|---|---|
-| Total return | +15.77% | +7.72% |
-| Sharpe | 0.96 | — |
-| Max drawdown | -10.77% | — |
-| Win rate | 43.8% | — |
-| Profit factor | 1.40 | — |
-| Trades | 80 | — |
+| Total return | +15.43% | +7.72% |
+| Excess return | +7.70% | — |
+| Sharpe | 0.92 | — |
+| Max drawdown | -13.15% | — |
+| Win rate | 42.0% | — |
+| Profit factor | 1.37 | — |
+| Trades | 81 | — |
 
-Positive out-of-sample, but fragile: validation drawdown was -19.44%,
+Positive out-of-sample, but fragile: validation drawdown was -19.39%,
 probabilities are not yet calibrated, and news features were zero because
 historical free news was unavailable. Paper trade this before risking money.
 
-Full report: `docs/backtests/2026-11-27-full-universe.md`
+Full report: `docs/backtests/2026-11-27-full-universe-yfinance.md`
 
 Paper-trading setup: `docs/paper-runbook.md`
 
