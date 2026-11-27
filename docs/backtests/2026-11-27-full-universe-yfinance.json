@@ -13,77 +13,98 @@
   "validation": [
     {
       "threshold": 0.5,
-      "total_return": 0.13150811382482575,
-      "sharpe": 0.7642544866609068,
-      "max_drawdown": -0.19390584341331496,
+      "total_return": 0.13150811497997883,
+      "sharpe": 0.7642545288717524,
+      "max_drawdown": -0.19390577152839394,
       "win_rate": 0.4666666666666667,
-      "profit_factor": 1.3036998930856016,
+      "profit_factor": 1.3036998713101375,
       "trades": 75.0,
       "max_open_positions": 5.0
     },
     {
       "threshold": 0.55,
-      "total_return": 0.13150811382482575,
-      "sharpe": 0.7642544866609068,
-      "max_drawdown": -0.19390584341331496,
+      "total_return": 0.13150811497997883,
+      "sharpe": 0.7642545288717524,
+      "max_drawdown": -0.19390577152839394,
       "win_rate": 0.4666666666666667,
-      "profit_factor": 1.3036998930856016,
+      "profit_factor": 1.3036998713101375,
       "trades": 75.0,
       "max_open_positions": 5.0
     },
     {
       "threshold": 0.6,
-      "total_return": 0.13150811382482575,
-      "sharpe": 0.7642544866609068,
-      "max_drawdown": -0.19390584341331496,
+      "total_return": 0.13150811497997883,
+      "sharpe": 0.7642545288717524,
+      "max_drawdown": -0.19390577152839394,
       "win_rate": 0.4666666666666667,
-      "profit_factor": 1.3036998930856016,
+      "profit_factor": 1.3036998713101375,
       "trades": 75.0,
       "max_open_positions": 5.0
     },
     {
       "threshold": 0.65,
-      "total_return": 0.13150811382482575,
-      "sharpe": 0.7642544866609068,
-      "max_drawdown": -0.19390584341331496,
+      "total_return": 0.13150811497997883,
+      "sharpe": 0.7642545288717524,
+      "max_drawdown": -0.19390577152839394,
       "win_rate": 0.4666666666666667,
-      "profit_factor": 1.3036998930856016,
+      "profit_factor": 1.3036998713101375,
       "trades": 75.0,
       "max_open_positions": 5.0
     },
     {
       "threshold": 0.7,
-      "total_return": -0.03653031707936172,
-      "sharpe": -0.1644289524068367,
-      "max_drawdown": -0.19332652400136474,
+      "total_return": -0.03653025034937041,
+      "sharpe": -0.16442853625781512,
+      "max_drawdown": -0.19332645216349065,
       "win_rate": 0.4305555555555556,
-      "profit_factor": 0.9091564568117095,
+      "profit_factor": 0.9091566294638479,
       "trades": 72.0,
       "max_open_positions": 5.0
     },
     {
       "threshold": 0.75,
-      "total_return": -0.02212088081582153,
-      "sharpe": -0.0807565776391341,
-      "max_drawdown": -0.17510815785001,
+      "total_return": -0.0221209389194289,
+      "sharpe": -0.08075696113490706,
+      "max_drawdown": -0.1751081049976302,
       "win_rate": 0.42424242424242425,
-      "profit_factor": 0.9389906977845626,
+      "profit_factor": 0.9389905352997825,
       "trades": 66.0,
       "max_open_positions": 5.0
     }
   ],
   "chosen_threshold": 0.5,
   "test": {
-    "total_return": 0.15425159431334157,
-    "sharpe": 0.9158177589293793,
-    "max_drawdown": -0.13150601153851948,
+    "total_return": 0.15425162532387637,
+    "sharpe": 0.9158181349850809,
+    "max_drawdown": -0.1315060143353297,
     "win_rate": 0.41975308641975306,
-    "profit_factor": 1.372436302105157,
+    "profit_factor": 1.3724364004176843,
     "trades": 81.0,
     "max_open_positions": 5.0,
     "benchmark_return": 0.0772437577377727,
-    "excess_return": 0.07700783657556887,
-    "annualized_volatility": 0.1464633061983484
+    "excess_return": 0.07700786758610367,
+    "annualized_volatility": 0.14646326445798108
+  },
+  "benchmarks": {
+    "spy": {
+      "total_return": 0.0772437577377727,
+      "sharpe": 0.5753594862422835,
+      "max_drawdown": -0.11459526655375551
+    },
+    "equal_weight": {
+      "total_return": 0.14565051005000762,
+      "sharpe": 0.7910693185008272,
+      "max_drawdown": -0.15552958126060612
+    },
+    "momentum_21_top1": {
+      "total_return": 0.09604658529752275,
+      "sharpe": 0.7725846390717135,
+      "max_drawdown": -0.07565144303519533,
+      "win_rate": 0.4186046511627907,
+      "profit_factor": 1.3997767776657424,
+      "trades": 43.0,
+      "max_open_positions": 4.0
+    }
   },
   "caveats": [
     "News features are zero in this backtest: free historical news was not available, so the news half of the hybrid model is not validated here.",

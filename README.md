@@ -44,19 +44,18 @@ node --test test/index.test.ts
 train/validation/test, 0.1% cost per side, 21-session hold, ATR stops, 1% risk
 per trade:
 
-| Metric (held-out year) | Strategy | SPY |
-|---|---|---|
-| Total return | +15.43% | +7.72% |
-| Excess return | +7.70% | — |
-| Sharpe | 0.92 | — |
-| Max drawdown | -13.15% | — |
-| Win rate | 42.0% | — |
-| Profit factor | 1.37 | — |
-| Trades | 81 | — |
+| Metric (held-out year) | ML strategy | SPY | Equal-weight | Momentum |
+|---|---|---|---|---|
+| Total return | +15.43% | +7.72% | +14.57% | +9.60% |
+| Sharpe | 0.92 | 0.58 | 0.79 | 0.77 |
+| Max drawdown | -13.15% | -11.46% | -15.55% | -7.57% |
+| Trades | 81 | 1 | 1 | 43 |
 
-Positive out-of-sample, but fragile: validation drawdown was -19.39%,
-probabilities are not yet calibrated, and news features were zero because
-historical free news was unavailable. Paper trade this before risking money.
+The model shows a modest edge: it beats SPY and the momentum baseline, but only
+edges equal-weight ownership by +0.86 percentage points on return. Validation
+drawdown was -19.39%, probabilities are not calibrated, and news features were
+zero because historical free news was unavailable. Paper trade this before
+risking money.
 
 Full report: `docs/backtests/2026-11-27-full-universe-yfinance.md`
 

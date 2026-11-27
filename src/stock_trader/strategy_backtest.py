@@ -31,6 +31,19 @@ class BacktestReport:
     metrics: dict[str, float]
 
 
+def curve_metrics(equity_curve: pd.Series) -> dict[str, float]:
+    daily = equity_curve.pct_change().dropna()
+    sharpe = 0.0
+    if len(daily) > 1 and daily.std(ddof=0) > 0:
+        sharpe = float(daily.mean() / daily.std(ddof=0) * np.sqrt(252))
+    peak = equity_curve.cummax()
+    return {
+        "total_return": float(equity_curve.iloc[-1] / equity_curve.iloc[0] - 1.0),
+        "sharpe": sharpe,
+        "max_drawdown": float((equity_curve / peak - 1.0).min()),
+    }
+
+
 def split_indices(
     n: int, train_frac: float = 0.6, val_frac: float = 0.2
 ) -> tuple[int, int, int, int]:

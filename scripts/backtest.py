@@ -11,7 +11,12 @@ from stock_trader.domain.models import NewsFeatures
 from stock_trader.model import FEATURE_COLUMNS, RankingModel, train_ranker
 from stock_trader.pipeline import build_feature_row, build_snapshot, build_training_panel
 from stock_trader.screener import passes_screener
-from stock_trader.strategy_backtest import Signal, simulate_portfolio, split_indices
+from stock_trader.strategy_backtest import (
+    Signal,
+    curve_metrics,
+    simulate_portfolio,
+    split_indices,
+)
 from stock_trader.universe import BENCHMARK, DEFAULT_UNIVERSE
 
 THRESHOLDS = (0.50, 0.55, 0.60, 0.65, 0.70, 0.75)
@@ -121,6 +126,36 @@ def warm_slice(
     }
 
 
+def momentum_signals(
+    frames: dict[str, pd.DataFrame],
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    settings: Settings,
+) -> list[Signal]:
+    signals: list[Signal] = []
+    for current in frames[BENCHMARK].loc[start:end].index:
+        best = None
+        for symbol, frame in frames.items():
+            if symbol == BENCHMARK:
+                continue
+            history = frame.loc[:current]
+            if len(history) < 230:
+                continue
+            try:
+                snapshot = build_snapshot(symbol, history)
+            except ValueError:
+                continue
+            if not passes_screener(snapshot, settings):
+                continue
+            closes = history["Close"].astype(float)
+            momentum = float(closes.iloc[-1] / closes.iloc[-22] - 1.0)
+            if momentum > 0 and (best is None or momentum > best[1]):
+                best = (symbol, momentum)
+        if best is not None:
+            signals.append(Signal(best[0], current, best[1]))
+    return signals
+
+
 def run(period: str, max_symbols: int | None, output: Path) -> dict:
     settings = Settings()
     frames = fetch_frames(period, max_symbols)
@@ -191,6 +226,27 @@ def run(period: str, max_symbols: int | None, output: Path) -> dict:
     )
     spy = frames[BENCHMARK].loc[test_start:test_date]["Close"]
     benchmark_return = float(spy.iloc[-1] / spy.iloc[0] - 1.0)
+    spy_metrics = curve_metrics(spy)
+    closes = pd.DataFrame(
+        {
+            symbol: frame.loc[test_start:test_date]["Close"]
+            for symbol, frame in frames.items()
+            if symbol != BENCHMARK
+        }
+    ).dropna()
+    equal_weight_curve = (
+        closes.div(closes.iloc[0]).mean(axis=1)
+        * settings.paper_starting_cash
+    )
+    equal_weight = curve_metrics(equal_weight_curve)
+    momentum_report = simulate_portfolio(
+        warm_slice(frames, test_start, test_date),
+        momentum_signals(frames, test_start, test_date, settings),
+        starting_cash=settings.paper_starting_cash,
+        risk_pct=settings.risk_per_trade,
+        max_positions=settings.max_positions,
+        hold_days=21,
+    )
 
     daily = test_report.equity_curve.pct_change().dropna()
     result = {
@@ -216,6 +272,11 @@ def run(period: str, max_symbols: int | None, output: Path) -> dict:
                 if len(daily) > 1
                 else 0.0
             ),
+        },
+        "benchmarks": {
+            "spy": spy_metrics,
+            "equal_weight": equal_weight,
+            "momentum_21_top1": momentum_report.metrics,
         },
         "caveats": [
             "News features are zero in this backtest: free historical news was not "
@@ -271,17 +332,23 @@ def render_markdown(result: dict, report) -> str:
         "",
         "## Held-out test",
         "",
-        "| Metric | Strategy | SPY buy-and-hold |",
-        "|---|---|---|",
+        "| Metric | ML strategy | SPY | Equal-weight universe | Momentum top-1 |",
+        "|---|---|---|---|---|",
         f"| Total return | {test['total_return']:+.2%} | "
-        f"{test['benchmark_return']:+.2%} |",
-        f"| Excess return | {test['excess_return']:+.2%} | — |",
-        f"| Sharpe (daily→annualized) | {test['sharpe']:.2f} | — |",
-        f"| Max drawdown | {test['max_drawdown']:.2%} | — |",
-        f"| Win rate | {test['win_rate']:.1%} | — |",
-        f"| Profit factor | {test['profit_factor']:.2f} | — |",
-        f"| Trades | {int(test['trades'])} | — |",
-        f"| Max concurrent positions | {int(test['max_open_positions'])} | — |",
+        f"{result['benchmarks']['spy']['total_return']:+.2%} | "
+        f"{result['benchmarks']['equal_weight']['total_return']:+.2%} | "
+        f"{result['benchmarks']['momentum_21_top1']['total_return']:+.2%} |",
+        f"| Sharpe | {test['sharpe']:.2f} | "
+        f"{result['benchmarks']['spy']['sharpe']:.2f} | "
+        f"{result['benchmarks']['equal_weight']['sharpe']:.2f} | "
+        f"{result['benchmarks']['momentum_21_top1']['sharpe']:.2f} |",
+        f"| Max drawdown | {test['max_drawdown']:.2%} | "
+        f"{result['benchmarks']['spy']['max_drawdown']:.2%} | "
+        f"{result['benchmarks']['equal_weight']['max_drawdown']:.2%} | "
+        f"{result['benchmarks']['momentum_21_top1']['max_drawdown']:.2%} |",
+        f"| Trades | {int(test['trades'])} | 1 | 1 | "
+        f"{int(result['benchmarks']['momentum_21_top1']['trades'])} |",
+        f"| Excess vs SPY | {test['excess_return']:+.2%} | — | — | — |",
         "",
         "## Caveats",
         "",

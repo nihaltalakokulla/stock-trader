@@ -24,16 +24,13 @@ Chosen on validation: **0.50**
 
 ## Held-out test
 
-| Metric | Strategy | SPY buy-and-hold |
-|---|---|---|
-| Total return | +15.43% | +7.72% |
-| Excess return | +7.70% | — |
-| Sharpe (daily→annualized) | 0.92 | — |
-| Max drawdown | -13.15% | — |
-| Win rate | 42.0% | — |
-| Profit factor | 1.37 | — |
-| Trades | 81 | — |
-| Max concurrent positions | 5 | — |
+| Metric | ML strategy | SPY | Equal-weight universe | Momentum top-1 |
+|---|---|---|---|---|
+| Total return | +15.43% | +7.72% | +14.57% | +9.60% |
+| Sharpe | 0.92 | 0.58 | 0.79 | 0.77 |
+| Max drawdown | -13.15% | -11.46% | -15.55% | -7.57% |
+| Trades | 81 | 1 | 1 | 43 |
+| Excess vs SPY | +7.70% | — | — | — |
 
 ## Caveats
 

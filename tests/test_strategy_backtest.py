@@ -2,7 +2,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from stock_trader.strategy_backtest import Signal, simulate_portfolio, split_indices
+from stock_trader.strategy_backtest import (
+    Signal,
+    curve_metrics,
+    simulate_portfolio,
+    split_indices,
+)
 
 
 def make_bars(closes):
@@ -18,6 +23,13 @@ def make_bars(closes):
 
 def test_split_indices_are_chronological():
     assert split_indices(100, 0.6, 0.2) == (0, 60, 80, 100)
+
+
+def test_curve_metrics_reports_return_and_drawdown():
+    index = pd.date_range("2026-01-01", periods=3, freq="B")
+    metrics = curve_metrics(pd.Series([100.0, 110.0, 99.0], index=index))
+    assert metrics["total_return"] == pytest.approx(-0.01)
+    assert metrics["max_drawdown"] == pytest.approx(-0.10)
 
 
 def test_time_exit_and_costs_produce_expected_pnl():
