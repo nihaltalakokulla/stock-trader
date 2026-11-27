@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from stock_trader.domain.models import NewsFeatures
-from stock_trader.pipeline import build_feature_row, build_snapshot
+from stock_trader.pipeline import build_feature_row, build_snapshot, build_training_panel
 
 
 def frame(rows=250, start=100.0, step=0.1, volume=2_000_000.0):
@@ -39,3 +39,20 @@ def test_feature_row_merges_price_and_news_features():
     }
     assert row["news_sentiment"] == 0.5
     assert row["news_shock"] == 1.0
+
+
+def test_training_panel_labels_forward_returns():
+    rising = frame(rows=600, start=100.0, step=0.2)
+    falling = frame(rows=600, start=200.0, step=-0.15)
+    panel = build_training_panel(
+        {"UP": rising, "DOWN": falling},
+        benchmark=None,
+        forward_days=21,
+        step=21,
+    )
+    assert len(panel) > 20
+    assert set(panel["symbol"]) == {"UP", "DOWN"}
+    up_labels = panel.loc[panel["symbol"] == "UP", "label"]
+    down_labels = panel.loc[panel["symbol"] == "DOWN", "label"]
+    assert up_labels.mean() > 0.9
+    assert down_labels.mean() < 0.1

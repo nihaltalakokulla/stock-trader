@@ -54,3 +54,31 @@ def build_feature_row(
     row["news_count"] = float(news.headline_count)
     row["news_shock"] = 1.0 if news.shock else 0.0
     return row
+
+
+def build_training_panel(
+    frames: dict[str, pd.DataFrame],
+    *,
+    benchmark: pd.DataFrame | None = None,
+    forward_days: int = 21,
+    step: int = 21,
+    min_history: int = 220,
+) -> pd.DataFrame:
+    rows: list[dict[str, float | str | int]] = []
+    empty_news = NewsFeatures(sentiment=0.0, headline_count=0, shock=False)
+    for symbol, frame in frames.items():
+        _require_columns(frame)
+        if len(frame) <= min_history + forward_days:
+            continue
+        closes = frame["Close"].astype(float)
+        for end in range(min_history, len(frame) - forward_days, step):
+            history = frame.iloc[: end + 1]
+            row = build_feature_row(history, empty_news, benchmark=benchmark)
+            forward_return = float(
+                closes.iloc[end + forward_days] / closes.iloc[end] - 1.0
+            )
+            row["symbol"] = symbol
+            row["label"] = int(forward_return > 0)
+            row["forward_return"] = forward_return
+            rows.append(row)
+    return pd.DataFrame(rows)
