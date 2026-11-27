@@ -83,3 +83,35 @@ def test_review_positions_sells_when_stop_is_hit(tmp_path):
 
     assert repo.open_position_symbols() == set()
     assert any("SELL" in text for text in outputs)
+
+
+def test_circuit_breaker_pauses_on_weekly_drawdown(tmp_path):
+    outputs: list[str] = []
+    repo = InMemoryRepository()
+    repo.set_setting("paper_account", {"cash": 18_000.0, "equity": 18_000.0})
+    repo.set_setting("week_anchor", {"week": "2026-11-23", "equity": 20_000.0})
+    runtime = Runtime(
+        settings=Settings(weekly_drawdown_limit=0.05),
+        repo=repo,
+        model_path=tmp_path / "unused.joblib",
+        now=lambda: datetime(2026, 11, 27, 23, 0, tzinfo=UTC),
+        output=outputs.append,
+    )
+    assert runtime.enforce_circuit_breaker(runtime.now()) is True
+    assert repo.get_setting("trading_paused") is True
+    assert any("paused" in text.lower() for text in outputs)
+
+
+def test_nightly_stops_immediately_when_paused(tmp_path):
+    outputs: list[str] = []
+    repo = InMemoryRepository()
+    repo.set_setting("trading_paused", True)
+    runtime = Runtime(
+        settings=Settings(),
+        repo=repo,
+        model_path=tmp_path / "missing.joblib",
+        now=lambda: datetime(2026, 11, 27, 23, 0, tzinfo=UTC),
+        output=outputs.append,
+    )
+    runtime.nightly(dry_run=True)
+    assert outputs == ["Trading is paused."]

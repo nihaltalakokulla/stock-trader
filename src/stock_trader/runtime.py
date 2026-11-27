@@ -63,6 +63,13 @@ class Runtime:
         )
 
     def nightly(self, dry_run: bool = False) -> None:
+        if self.repo.get_setting("trading_paused"):
+            self.output("Trading is paused.")
+            return
+        self.repo.expire_stale_proposals(self.now())
+        if self.enforce_circuit_breaker(self.now()):
+            return
+        self.sweep_approvals()
         if not self.model_path.exists():
             raise RuntimeError("model missing; run `python -m stock_trader.cli train`")
         self.review_positions(dry_run=dry_run)
@@ -168,6 +175,9 @@ class Runtime:
             self.output(f"Proposal text sent for {candidate.symbol}.")
 
     def execute(self, approval_key: str) -> None:
+        if self.repo.has_order(approval_key):
+            self.output("Approval already executed.")
+            return
         approval = self.repo.get_approval(approval_key)
         if approval is None:
             raise RuntimeError(f"approval not found: {approval_key}")
@@ -320,6 +330,30 @@ class Runtime:
     def _paper_equity(self) -> float:
         state = self.repo.get_setting("paper_account") or {}
         return float(state.get("equity", self.settings.paper_starting_cash))
+
+    def enforce_circuit_breaker(self, now: datetime) -> bool:
+        state = self.repo.get_setting("paper_account") or {}
+        equity = float(state.get("equity", self.settings.paper_starting_cash))
+        week = (now.date() - timedelta(days=now.weekday())).isoformat()
+        anchor = self.repo.get_setting("week_anchor") or {}
+        if anchor.get("week") != week:
+            self.repo.set_setting("week_anchor", {"week": week, "equity": equity})
+            return False
+        threshold = float(anchor["equity"]) * (
+            1.0 - self.settings.weekly_drawdown_limit
+        )
+        if equity <= threshold:
+            self.repo.set_setting("trading_paused", True)
+            self.output(
+                f"Trading paused: weekly equity ${equity:,.2f} is below "
+                f"the ${threshold:,.2f} circuit-breaker line."
+            )
+            return True
+        return False
+
+    def sweep_approvals(self) -> None:
+        for approval in self.repo.list_yes_approvals():
+            self.execute(approval["idempotency_key"])
 
 
 def _parse_time(value) -> datetime:

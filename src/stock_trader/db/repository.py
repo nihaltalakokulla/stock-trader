@@ -1,4 +1,5 @@
 from typing import Any, Protocol
+from datetime import datetime
 
 from stock_trader.domain.state import TradeState
 
@@ -25,6 +26,7 @@ class InMemoryRepository:
         self._signals: list[dict[str, Any]] = []
         self._settings: dict[str, Any] = {}
         self._positions: dict[str, dict[str, Any]] = {}
+        self._orders: list[dict[str, Any]] = []
 
     def save_proposal(self, proposal_id: str, data: dict[str, Any]) -> None:
         self._proposals[proposal_id] = data
@@ -83,6 +85,7 @@ class InMemoryRepository:
         self._settings[key] = value
 
     def insert_order(self, data: dict[str, Any]) -> dict[str, Any]:
+        self._orders.append(data)
         return data
 
     def upsert_position(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -91,3 +94,26 @@ class InMemoryRepository:
 
     def remove_position(self, symbol: str) -> None:
         self._positions.pop(symbol, None)
+
+    def has_order(self, client_id: str) -> bool:
+        return any(order.get("client_id") == client_id for order in self._orders)
+
+    def expire_stale_proposals(self, now: datetime) -> None:
+        for proposal_id, data in self._proposals.items():
+            if data.get("state") != TradeState.PROPOSED.value:
+                continue
+            expires = data["expires_at"]
+            if not isinstance(expires, datetime):
+                expires = datetime.fromisoformat(
+                    str(expires).replace("Z", "+00:00")
+                )
+            if expires <= now:
+                data["state"] = TradeState.EXPIRED.value
+                self._states[proposal_id] = TradeState.EXPIRED
+
+    def list_yes_approvals(self) -> list[dict[str, Any]]:
+        return [
+            {"idempotency_key": key, **data}
+            for key, data in self._approvals.items()
+            if data.get("decision") == "YES"
+        ]

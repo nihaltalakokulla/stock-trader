@@ -139,6 +139,14 @@ export default {
       return twiml("Could not record your reply. Check the dashboard.");
     }
 
+    await fetch(`${env.SUPABASE_URL}/rest/v1/proposals?id=eq.${proposalId}`, {
+      method: "PATCH",
+      headers: supabaseHeaders(env, { prefer: "return=minimal" }),
+      body: JSON.stringify({
+        state: decision === "YES" ? "APPROVED" : "REJECTED",
+      }),
+    });
+
     if (decision === "YES") {
       const workflow = env.GITHUB_WORKFLOW_FILE ?? "execute.yml";
       const dispatch = await fetch(

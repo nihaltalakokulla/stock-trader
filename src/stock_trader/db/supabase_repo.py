@@ -123,6 +123,18 @@ class SupabaseRepository:
         )
         return len(rows)
 
+    def expire_stale_proposals(self, now) -> None:
+        response = self._client.patch(
+            f"{self._url}/rest/v1/proposals",
+            params={
+                "state": "eq.PROPOSED",
+                "expires_at": f"lt.{now.isoformat()}",
+            },
+            json={"state": "EXPIRED"},
+            headers=self._headers("return=minimal"),
+        )
+        response.raise_for_status()
+
     def open_position_symbols(self) -> set[str]:
         rows = self._get("positions", {"select": "symbol", "qty": "gt.0"})
         return {row["symbol"] for row in rows}
@@ -147,4 +159,16 @@ class SupabaseRepository:
             "settings",
             {"key": key, "value": value},
             prefer="resolution=merge-duplicates,return=representation",
+        )
+
+    def has_order(self, client_id: str) -> bool:
+        rows = self._get(
+            "orders", {"select": "id", "client_id": f"eq.{client_id}"}
+        )
+        return bool(rows)
+
+    def list_yes_approvals(self) -> list[dict]:
+        return self._get(
+            "approvals",
+            {"select": "idempotency_key,proposal_id", "decision": "eq.YES"},
         )
