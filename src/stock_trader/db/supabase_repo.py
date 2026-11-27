@@ -103,6 +103,16 @@ class SupabaseRepository:
         )
         response.raise_for_status()
 
+    def insert_order(self, data: dict[str, Any]) -> dict:
+        return self._insert("orders", data)
+
+    def upsert_position(self, data: dict[str, Any]) -> dict:
+        return self._insert(
+            "positions",
+            data,
+            prefer="resolution=merge-duplicates,return=representation",
+        )
+
     def get_trade_state(self, trade_id: str) -> TradeState | None:
         proposal = self.get_proposal(trade_id)
         return TradeState(proposal["state"]) if proposal else None

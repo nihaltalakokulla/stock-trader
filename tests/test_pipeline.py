@@ -2,7 +2,12 @@ import numpy as np
 import pandas as pd
 
 from stock_trader.domain.models import NewsFeatures
-from stock_trader.pipeline import build_feature_row, build_snapshot, build_training_panel
+from stock_trader.pipeline import (
+    atr,
+    build_feature_row,
+    build_snapshot,
+    build_training_panel,
+)
 
 
 def frame(rows=250, start=100.0, step=0.1, volume=2_000_000.0):
@@ -56,3 +61,15 @@ def test_training_panel_labels_forward_returns():
     down_labels = panel.loc[panel["symbol"] == "DOWN", "label"]
     assert up_labels.mean() > 0.9
     assert down_labels.mean() < 0.1
+
+
+def test_atr_measures_average_true_range():
+    rows = 30
+    closes = np.full(rows, 100.0)
+    data = pd.DataFrame({
+        "Close": closes,
+        "Volume": np.full(rows, 1_000_000.0),
+        "High": closes + 1.0,
+        "Low": closes - 1.0,
+    })
+    assert atr(data, period=14) == 2.0

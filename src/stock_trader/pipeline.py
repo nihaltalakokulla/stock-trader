@@ -82,3 +82,16 @@ def build_training_panel(
             row["forward_return"] = forward_return
             rows.append(row)
     return pd.DataFrame(rows)
+
+
+def atr(frame: pd.DataFrame, period: int = 14) -> float:
+    _require_columns(frame)
+    close = frame["Close"].astype(float)
+    high = frame["High"].astype(float) if "High" in frame else close
+    low = frame["Low"].astype(float) if "Low" in frame else close
+    previous = close.shift(1)
+    true_range = pd.concat(
+        [high - low, (high - previous).abs(), (low - previous).abs()],
+        axis=1,
+    ).max(axis=1)
+    return float(true_range.iloc[-period:].mean())
